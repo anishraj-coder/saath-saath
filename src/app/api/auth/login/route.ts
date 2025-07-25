@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { loginSchema } from '@/lib/validations';
-import { generateOTP, storeOTP, generateToken } from '@/lib/auth';
+import { generateOTP, storeOTP } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,19 +17,12 @@ export async function POST(request: NextRequest) {
     
     if (!vendor) {
       return NextResponse.json(
-        { error: 'Vendor not found. Please register first.' },
+        { error: 'No account found with this phone number. Please register first.' },
         { status: 404 }
       );
     }
     
-    if (vendor.verificationStatus !== 'verified') {
-      return NextResponse.json(
-        { error: 'Phone number not verified. Please complete verification first.' },
-        { status: 400 }
-      );
-    }
-    
-    // Generate and store OTP for login
+    // Generate and store OTP
     const otp = generateOTP();
     storeOTP(validatedData.phone, otp);
     
@@ -37,7 +30,7 @@ export async function POST(request: NextRequest) {
     console.log(`Login OTP for ${validatedData.phone}: ${otp}`);
     
     return NextResponse.json({
-      message: 'OTP sent to your phone number. Please verify to login.',
+      message: 'OTP sent successfully. Please verify your phone number.',
       // In production, don't send OTP in response
       otp: process.env.NODE_ENV === 'development' ? otp : undefined
     });
@@ -45,15 +38,24 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Login error:', error);
     
-    if (error instanceof Error && error.name === 'ZodError') {
+    // Handle Zod validation errors
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
       return NextResponse.json(
-        { error: 'Invalid input data', details: error },
+        { error: 'Invalid phone number format', details: error },
         { status: 400 }
       );
     }
     
+    // Handle Prisma/Database errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      return NextResponse.json(
+        { error: 'Database connection error. Please try again.' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

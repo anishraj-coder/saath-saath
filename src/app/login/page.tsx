@@ -32,7 +32,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'Failed to send OTP');
       }
 
-      // Store the OTP for development (in production, this would be sent via SMS)
+      // Store the OTP for development
       if (data.otp) {
         setGeneratedOtp(data.otp);
       }
@@ -57,8 +57,8 @@ export default function LoginPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phone: phone,
-          otp: otp,
+          phone,
+          otp,
         }),
       });
 
@@ -68,7 +68,7 @@ export default function LoginPage() {
         throw new Error(data.error || 'OTP verification failed');
       }
 
-      // Store token in localStorage (in production, use secure storage)
+      // Store token in localStorage
       localStorage.setItem('token', data.token);
       localStorage.setItem('vendor', JSON.stringify(data.vendor));
 
@@ -86,7 +86,7 @@ export default function LoginPage() {
       <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Verify OTP</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Verify Phone</h1>
             <p className="text-gray-600">Enter the OTP sent to {phone}</p>
             {generatedOtp && (
               <div className="mt-4 p-3 bg-blue-100 rounded-lg">
@@ -125,7 +125,7 @@ export default function LoginPage() {
               disabled={loading || otp.length !== 6}
               className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {loading ? 'Verifying...' : 'Login'}
+              {loading ? 'Verifying...' : 'Verify OTP'}
             </button>
 
             <button
@@ -160,7 +160,7 @@ export default function LoginPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              placeholder="Enter your mobile number"
+              placeholder="Enter 10-digit mobile number"
               pattern="[6-9][0-9]{9}"
               required
             />
@@ -182,7 +182,7 @@ export default function LoginPage() {
 
           <div className="text-center">
             <a href="/register" className="text-orange-500 hover:text-orange-600 font-medium">
-              Don't have an account? Register
+              Don&apos;t have an account? Register
             </a>
           </div>
         </form>

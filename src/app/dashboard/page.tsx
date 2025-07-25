@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useClientOnly } from '@/hooks/useClientOnly';
 
 interface Vendor {
   id: string;
@@ -17,8 +18,12 @@ export default function DashboardPage() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const isClient = useClientOnly();
 
   useEffect(() => {
+    // Only run on client side after hydration
+    if (!isClient) return;
+    
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -33,7 +38,7 @@ export default function DashboardPage() {
 
     // Fetch fresh vendor data from API
     fetchVendorProfile(token);
-  }, [router]);
+  }, [isClient, router]);
 
   const fetchVendorProfile = async (token: string) => {
     try {
@@ -49,12 +54,16 @@ export default function DashboardPage() {
 
       const data = await response.json();
       setVendor(data.vendor);
-      localStorage.setItem('vendor', JSON.stringify(data.vendor));
+      if (isClient) {
+        localStorage.setItem('vendor', JSON.stringify(data.vendor));
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       // If token is invalid, redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('vendor');
+      if (isClient) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('vendor');
+      }
       router.push('/login');
     } finally {
       setLoading(false);
@@ -62,8 +71,10 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('vendor');
+    if (isClient) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('vendor');
+    }
     router.push('/login');
   };
 

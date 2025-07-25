@@ -29,8 +29,7 @@ export async function POST(request: NextRequest) {
     // In production, send OTP via SMS service
     console.log(`OTP for ${validatedData.phone}: ${otp}`);
     
-    // Store registration data temporarily (in production, use Redis)
-    // For now, we'll create the vendor record with pending verification
+    // Create vendor record with pending verification
     const vendor = await prisma.vendor.create({
       data: {
         name: validatedData.name,
@@ -52,15 +51,24 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Registration error:', error);
     
-    if (error instanceof Error && error.name === 'ZodError') {
+    // Handle Zod validation errors
+    if (error && typeof error === 'object' && 'name' in error && error.name === 'ZodError') {
       return NextResponse.json(
         { error: 'Invalid input data', details: error },
         { status: 400 }
       );
     }
     
+    // Handle Prisma/Database errors
+    if (error && typeof error === 'object' && 'code' in error) {
+      return NextResponse.json(
+        { error: 'Database connection error. Please check your database setup.' },
+        { status: 500 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
