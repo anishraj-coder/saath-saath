@@ -1,81 +1,26 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useClientOnly } from '@/hooks/useClientOnly';
-
-interface Vendor {
-  id: string;
-  name: string;
-  phone: string;
-  stallAddress?: string;
-  verificationStatus: string;
-  creditLimit: number;
-  totalSavings: number;
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function DashboardPage() {
-  const [vendor, setVendor] = useState<Vendor | null>(null);
-  const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const isClient = useClientOnly();
+  const { user, vendor, loading, logout } = useAuth();
 
   useEffect(() => {
-    // Only run on client side after hydration
-    if (!isClient) return;
-    
-    const token = localStorage.getItem('token');
-    if (!token) {
+    if (!loading && !user) {
       router.push('/login');
-      return;
     }
+  }, [user, loading, router]);
 
-    // Load vendor data from localStorage initially
-    const storedVendor = localStorage.getItem('vendor');
-    if (storedVendor) {
-      setVendor(JSON.parse(storedVendor));
-    }
-
-    // Fetch fresh vendor data from API
-    fetchVendorProfile(token);
-  }, [isClient, router]);
-
-  const fetchVendorProfile = async (token: string) => {
+  const handleLogout = async () => {
     try {
-      const response = await fetch('/api/vendor/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-
-      const data = await response.json();
-      setVendor(data.vendor);
-      if (isClient) {
-        localStorage.setItem('vendor', JSON.stringify(data.vendor));
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      // If token is invalid, redirect to login
-      if (isClient) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('vendor');
-      }
+      await logout();
       router.push('/login');
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('Logout error:', error);
     }
-  };
-
-  const handleLogout = () => {
-    if (isClient) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('vendor');
-    }
-    router.push('/login');
   };
 
   if (loading) {
@@ -89,7 +34,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!vendor) {
+  if (!user || !vendor) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -148,7 +93,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Savings</p>
-                <p className="text-2xl font-bold text-gray-900">₹{vendor.totalSavings.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-gray-900">₹{vendor.totalSavings?.toFixed(2) || '0.00'}</p>
               </div>
             </div>
           </div>
@@ -162,7 +107,7 @@ export default function DashboardPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Credit Limit</p>
-                <p className="text-2xl font-bold text-gray-900">₹{vendor.creditLimit.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-gray-900">₹{vendor.creditLimit?.toFixed(2) || '0.00'}</p>
               </div>
             </div>
           </div>
@@ -191,10 +136,14 @@ export default function DashboardPage() {
               <p className="text-gray-900">{vendor.name}</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-1">Phone</label>
-              <p className="text-gray-900">{vendor.phone}</p>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Email</label>
+              <p className="text-gray-900">{vendor.email}</p>
             </div>
-            <div className="md:col-span-2">
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-1">Phone</label>
+              <p className="text-gray-900">{vendor.phone || 'Not provided'}</p>
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-600 mb-1">Stall Address</label>
               <p className="text-gray-900">{vendor.stallAddress || 'Not provided'}</p>
             </div>
