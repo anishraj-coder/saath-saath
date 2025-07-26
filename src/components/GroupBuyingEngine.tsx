@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FirestoreService, Order, BuyingGroup, Product, Vendor } from '@/lib/firestore';
-import { GeoPoint, Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 
 interface GroupBuyingEngineProps {
   currentOrder?: Order;

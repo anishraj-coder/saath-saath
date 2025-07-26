@@ -86,6 +86,8 @@ export default function DashboardPage() {
       totalAmount: 0,
       paymentMethod: 'credit',
       status: 'pending',
+      deliveryAddress: vendor.stallAddress || 'Demo Stall Location',
+      deliveryLocation: vendor.stallLocation,
       createdAt: Timestamp.now()
     };
 

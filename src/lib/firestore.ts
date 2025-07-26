@@ -78,8 +78,13 @@ export interface BuyingGroup {
   totalSavings: number;
   status: 'forming' | 'confirmed' | 'ordered' | 'delivered';
   deliverySlot: Timestamp;
-  deliveryArea: string;
+  deliveryArea?: string;
+  centerLocation?: GeoPoint; // Geographic center of the group
+  radiusKm?: number; // Group radius in kilometers
+  formationDeadline?: Timestamp; // When group formation closes
+  minimumMembers?: number; // Minimum vendors needed
   createdAt: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export interface GroupProduct {
@@ -87,8 +92,9 @@ export interface GroupProduct {
   productName: string;
   totalQuantity: number;
   unitPrice: number;
+  bulkPrice?: number;
   totalSavings: number;
-  memberOrders: { vendorId: string; quantity: number }[];
+  memberOrders: { vendorId: string; quantity: number; individualSavings?: number }[];
 }
 
 export interface Supplier {

@@ -107,7 +107,18 @@ export class WeatherService {
       
       const data = await response.json();
       
-      return data.forecast.forecastday.map((day: any) => ({
+      return data.forecast.forecastday.map((day: { 
+        date: string; 
+        day: { 
+          avgtemp_c: number; 
+          avghumidity: number; 
+          totalprecip_mm: number; 
+          maxwind_kph: number; 
+          maxtemp_c: number;
+          mintemp_c: number;
+          condition: { text: string; icon: string } 
+        } 
+      }) => ({
         date: new Date(day.date),
         weather: {
           temperature: day.day.avgtemp_c,
