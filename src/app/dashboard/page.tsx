@@ -9,7 +9,7 @@ import { Timestamp } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, vendor, loading } = useAuth();
+  const { user, vendor, loading, logout } = useAuth();
   const [currentOrder, setCurrentOrder] = useState<Order | undefined>();
   const [products, setProducts] = useState<Product[]>([]);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
@@ -138,7 +138,18 @@ export default function DashboardPage() {
                 Test Engine
               </button>
               <button
-                onClick={() => router.push('/login')}
+                onClick={async () => {
+                  try {
+                    console.log('Logging out...');
+                    await logout();
+                    console.log('Logout successful, redirecting...');
+                    router.push('/');
+                  } catch (error) {
+                    console.error('Logout failed:', error);
+                    // Force redirect even if logout fails
+                    router.push('/');
+                  }
+                }}
                 className="button-text text-gray-500 hover:text-gray-700"
               >
                 Logout

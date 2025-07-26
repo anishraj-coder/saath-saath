@@ -1,19 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+// Removed unused imports
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
-  const router = useRouter();
   const { user, loading } = useAuth();
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
+  // Removed automatic redirect to dashboard to prevent logout issues
+  // Users can manually navigate to dashboard via the button
 
   if (loading) {
     return (
@@ -36,18 +31,32 @@ export default function Home() {
               <h1 className="heading-4 text-orange-600 mb-0">Saath-Saath</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Link
-                href="/login"
-                className="button-text text-gray-700 hover:text-orange-600"
-              >
-                Login
-              </Link>
-              <Link
-                href="/register"
-                className="button-text bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
-              >
-                Register
-              </Link>
+              {user ? (
+                <>
+                  <span className="body-2 text-gray-700">Welcome back!</span>
+                  <Link
+                    href="/dashboard"
+                    className="button-text bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="button-text text-gray-700 hover:text-orange-600"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="button-text bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Register
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
