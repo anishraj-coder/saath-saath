@@ -13,8 +13,8 @@ export default function RegisterPage() {
     confirmPassword: '',
     phone: '',
     stallAddress: '',
-    stallLatitude: null as number | null,
-    stallLongitude: null as number | null
+    stallLatitude: undefined as number | undefined,
+    stallLongitude: undefined as number | undefined
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,8 +46,8 @@ export default function RegisterPage() {
         stallLongitude: formData.stallLongitude
       });
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
@@ -74,13 +74,13 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Join Saath-Saath</h1>
-          <p className="text-gray-600">Register as a street food vendor</p>
+          <h1 className="heading-2 text-gray-900">Join Saath-Saath</h1>
+          <p className="body-1 text-gray-600">Register as a street food vendor</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 ">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="name" className="block body-2 text-gray-700 mb-2">
               Full Name
             </label>
             <input
@@ -95,7 +95,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium  text-black mb-2">
+            <label htmlFor="email" className="block body-2 text-gray-700 mb-2">
               Email Address
             </label>
             <input
@@ -110,7 +110,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="phone" className="block body-2 text-gray-700 mb-2">
               Mobile Number
             </label>
             <input
@@ -124,7 +124,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block  text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block body-2 text-gray-700 mb-2">
               Password
             </label>
             <input
@@ -139,7 +139,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="confirmPassword" className="block body-2 text-gray-700 mb-2">
               Confirm Password
             </label>
             <input
@@ -154,7 +154,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="address" className="block body-2 text-gray-700 mb-2">
               Stall Address
             </label>
             <textarea
@@ -171,12 +171,12 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={getCurrentLocation}
-              className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-600 transition-colors"
+              className="button-text w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
             >
               📍 Get Current Location
             </button>
             {formData.stallLatitude && formData.stallLongitude && (
-              <p className="text-sm text-green-600 mt-2">
+              <p className="caption text-green-600 mt-2">
                 ✓ Location captured: {formData.stallLatitude.toFixed(6)}, {formData.stallLongitude.toFixed(6)}
               </p>
             )}
@@ -191,13 +191,13 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="button-text w-full bg-orange-500 text-white py-3 px-4 rounded-lg hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
 
           <div className="text-center">
-            <Link href="/login" className="text-orange-500 hover:text-orange-600 font-medium">
+            <Link href="/login" className="button-text text-orange-500 hover:text-orange-600">
               Already have an account? Login
             </Link>
           </div>

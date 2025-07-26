@@ -188,11 +188,11 @@ export default function SetupFirebasePage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Firebase Setup for Saath-Saath</h1>
+        <h1 className="heading-2 text-gray-900">Firebase Setup for Saath-Saath</h1>
         
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Setup Complete Firebase Database</h2>
-          <p className="text-gray-600 mb-4">
+          <h2 className="heading-4 mb-4">Setup Complete Firebase Database</h2>
+          <p className="body-1 text-gray-600">
             This will create sample suppliers, products, and a demo user account in Firestore.
           </p>
           
@@ -200,7 +200,7 @@ export default function SetupFirebasePage() {
             <button
               onClick={createSampleData}
               disabled={loading}
-              className="w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50"
+              className="button-text w-full bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 disabled:opacity-50"
             >
               {loading ? 'Setting up...' : 'Setup Firebase Data'}
             </button>
@@ -208,7 +208,7 @@ export default function SetupFirebasePage() {
             <button
               onClick={testFirestore}
               disabled={loading}
-              className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              className="button-text w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 disabled:opacity-50"
             >
               {loading ? 'Testing...' : 'Test Firestore Connection'}
             </button>
@@ -220,14 +220,14 @@ export default function SetupFirebasePage() {
               message.includes('❌') ? 'bg-red-100 text-red-800' : 
               'bg-blue-100 text-blue-800'
             }`}>
-              <p className="font-medium">{message}</p>
+              <p className="body-2">{message}</p>
             </div>
           )}
         </div>
 
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Next Steps</h2>
-          <ol className="list-decimal list-inside space-y-2 text-gray-600">
+          <h2 className="heading-4 mb-4">Next Steps</h2>
+          <ol className="body-2 list-decimal list-inside space-y-2 text-gray-600">
             <li>Make sure Firebase Authentication and Firestore are enabled in Firebase Console</li>
             <li>Click &quot;Setup Firebase Data&quot; above</li>
             <li>Go to <a href="/login" className="text-orange-500 hover:underline">Login</a> and use: demo@saathsaath.com / demo123</li>

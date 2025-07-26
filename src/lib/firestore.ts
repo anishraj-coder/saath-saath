@@ -3,13 +3,11 @@ import {
   doc, 
   addDoc, 
   updateDoc, 
-  deleteDoc, 
   getDoc, 
   getDocs, 
   query, 
   where, 
   orderBy, 
-  limit,
   Timestamp,
   GeoPoint
 } from 'firebase/firestore';

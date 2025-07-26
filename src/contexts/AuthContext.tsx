@@ -120,9 +120,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       await setDoc(doc(db, 'vendors', user.uid), newVendor);
       setVendor(newVendor);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
-      setError(error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      setError(errorMessage);
       throw error;
     }
   };
@@ -131,9 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       setError(null);
       await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      setError(error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      setError(errorMessage);
       throw error;
     }
   };
@@ -160,9 +162,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       await setDoc(doc(db, 'vendors', user.uid), updatedVendor);
       setVendor(updatedVendor);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Profile update error:', error);
-      setError(error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Profile update failed';
+      setError(errorMessage);
       throw error;
     }
   };

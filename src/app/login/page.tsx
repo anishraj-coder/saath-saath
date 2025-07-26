@@ -38,13 +38,13 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h1>
-          <p className="text-gray-600">Login to your Saath-Saath account</p>
+          <h1 className="heading-2 text-gray-900">Welcome Back</h1>
+          <p className="body-1 text-gray-600">Login to your Saath-Saath account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block body-2 text-gray-700 mb-2">
               Email Address
             </label>
             <input
@@ -59,7 +59,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block body-2 text-gray-700 mb-2">
               Password
             </label>
             <input
@@ -82,29 +82,29 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-orange-500 text-white py-3 px-4 rounded-lg font-semibold hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="button-text w-full bg-orange-500 text-white py-3 px-4 rounded-lg hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
 
           <div className="text-center">
-            <Link href="/register" className="text-orange-500 hover:text-orange-600 font-medium">
+            <Link href="/register" className="button-text text-orange-500 hover:text-orange-600">
               Don&apos;t have an account? Register
             </Link>
           </div>
 
           {/* Demo credentials */}
           <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800 font-medium mb-2">Demo Credentials:</p>
-            <p className="text-xs text-blue-600">Email: demo@saathsaath.com</p>
-            <p className="text-xs text-blue-600">Password: demo123</p>
+            <p className="body-2 text-blue-800 mb-2">Demo Credentials:</p>
+            <p className="caption text-blue-600">Email: demo@saathsaath.com</p>
+            <p className="caption text-blue-600">Password: demo123</p>
             <button
               type="button"
               onClick={() => {
                 setEmail('demo@saathsaath.com');
                 setPassword('demo123');
               }}
-              className="mt-2 text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              className="caption mt-2 bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
             >
               Use Demo Credentials
             </button>
