@@ -13,8 +13,8 @@ export default function RegisterPage() {
     confirmPassword: '',
     phone: '',
     stallAddress: '',
-    stallLatitude: null as number | null,
-    stallLongitude: null as number | null
+    stallLatitude: undefined as number | undefined,
+    stallLongitude: undefined as number | undefined
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,8 +46,8 @@ export default function RegisterPage() {
         stallLongitude: formData.stallLongitude
       });
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setLoading(false);
     }
