@@ -163,13 +163,19 @@ export class FirestoreService {
   }
 
   static async getVendorOrders(vendorId: string): Promise<Order[]> {
-    const q = query(
-      collection(db, 'orders'),
-      where('vendorId', '==', vendorId),
-      orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    try {
+      const q = query(
+        collection(db, 'orders'),
+        where('vendorId', '==', vendorId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    } catch (error) {
+      console.error('Error getting vendor orders:', error);
+      // Return empty array if query fails (graceful degradation)
+      return [];
+    }
   }
 
   static async updateOrderStatus(orderId: string, status: Order['status']) {
@@ -184,14 +190,20 @@ export class FirestoreService {
   }
 
   static async getBuyingGroups(status?: BuyingGroup['status']): Promise<BuyingGroup[]> {
-    let q = query(collection(db, 'buyingGroups'), orderBy('createdAt', 'desc'));
-    
-    if (status) {
-      q = query(q, where('status', '==', status));
+    try {
+      let q = query(collection(db, 'buyingGroups'), orderBy('createdAt', 'desc'));
+      
+      if (status) {
+        q = query(q, where('status', '==', status));
+      }
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuyingGroup));
+    } catch (error) {
+      console.error('Error getting buying groups:', error);
+      // Return empty array if query fails (graceful degradation)
+      return [];
     }
-    
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuyingGroup));
   }
 
   // Group Buying Engine - Core Functions
@@ -215,26 +227,37 @@ export class FirestoreService {
   }
 
   static async findCompatibleOrders(newOrder: Order): Promise<Order[]> {
-    // Find orders with similar products in the same area
-    const recentOrders = await getDocs(
-      query(
-        collection(db, 'orders'),
-        where('status', '==', 'pending'),
-        where('createdAt', '>', new Date(Date.now() - 2 * 60 * 60 * 1000)) // Last 2 hours
-      )
-    );
+    try {
+      // Simplified query - only filter by status to avoid composite index requirement
+      const pendingOrders = await getDocs(
+        query(
+          collection(db, 'orders'),
+          where('status', '==', 'pending')
+        )
+      );
 
-    return recentOrders.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as Order))
-      .filter(order => {
-        // Check if orders have overlapping products
-        const newOrderProductIds = newOrder.items.map(item => item.productId);
-        const existingOrderProductIds = order.items.map(item => item.productId);
-        
-        return newOrderProductIds.some(productId => 
-          existingOrderProductIds.includes(productId)
-        );
-      });
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+      return pendingOrders.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Order))
+        .filter(order => {
+          // Filter by time in JavaScript (to avoid composite index)
+          const orderTime = order.createdAt.toDate();
+          if (orderTime < twoHoursAgo) return false;
+
+          // Check if orders have overlapping products
+          const newOrderProductIds = newOrder.items.map(item => item.productId);
+          const existingOrderProductIds = order.items.map(item => item.productId);
+          
+          return newOrderProductIds.some(productId => 
+            existingOrderProductIds.includes(productId)
+          );
+        });
+    } catch (error) {
+      console.error('Error finding compatible orders:', error);
+      // Return empty array if query fails (graceful degradation)
+      return [];
+    }
   }
 
   static calculateBulkDiscount(product: Product, totalQuantity: number): number {
