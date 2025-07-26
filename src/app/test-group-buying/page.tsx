@@ -160,7 +160,7 @@ export default function TestGroupBuyingPage() {
           <div className="bg-gray-900 rounded-lg p-4 h-96 overflow-y-auto">
             <div className="font-mono text-sm text-green-400">
               {testResults.length === 0 ? (
-                <p>Click "Run Group Buying Test" to start testing...</p>
+                <p>Click &quot;Run Group Buying Test&quot; to start testing...</p>
               ) : (
                 testResults.map((result, index) => (
                   <div key={index} className="mb-1">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { FirestoreService, Order, BuyingGroup, Product, Vendor } from '@/lib/firestore';
 import { Timestamp } from 'firebase/firestore';
@@ -29,24 +29,21 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
   });
   const [activeGroups, setActiveGroups] = useState<BuyingGroup[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
     loadActiveGroups();
     loadProducts();
   }, []);
 
-  useEffect(() => {
-    if (currentOrder && vendor) {
-      startGroupFormation(currentOrder);
-    }
-  }, [currentOrder, startGroupFormation, vendor]);
-
   const loadActiveGroups = async () => {
     try {
       const groups = await FirestoreService.getBuyingGroups('forming');
       setActiveGroups(groups);
+      setConnectionError(null);
     } catch (error) {
       console.error('Error loading active groups:', error);
+      setConnectionError('Unable to connect to Firebase. Working in offline mode.');
     }
   };
 
@@ -54,12 +51,14 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
     try {
       const productList = await FirestoreService.getProducts();
       setProducts(productList);
+      setConnectionError(null);
     } catch (error) {
       console.error('Error loading products:', error);
+      setConnectionError('Unable to load products. Please check your internet connection.');
     }
   };
 
-  const startGroupFormation = async (order: Order) => {
+  const startGroupFormation = useCallback(async (order: Order) => {
     if (!vendor?.stallLocation) return;
 
     setStatus(prev => ({ ...prev, isSearching: true, groupFormationProgress: 10 }));
@@ -118,7 +117,13 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
       console.error('Group formation error:', error);
       setStatus(prev => ({ ...prev, isSearching: false }));
     }
-  };
+  }, [vendor, products, onGroupFormed]);
+
+  useEffect(() => {
+    if (currentOrder && vendor) {
+      startGroupFormation(currentOrder);
+    }
+  }, [currentOrder, startGroupFormation, vendor]);
 
   const calculatePotentialSavings = (mainOrder: Order, compatibleOrders: Order[]): number => {
     let totalSavings = 0;
@@ -251,10 +256,28 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
       <div className="flex items-center justify-between mb-6">
         <h2 className="heading-4 text-gray-900">Group Buying Engine</h2>
         <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-          <span className="caption text-green-600">Active</span>
+          <div className={`w-3 h-3 rounded-full ${connectionError ? 'bg-red-500' : 'bg-green-500 animate-pulse'}`}></div>
+          <span className={`caption ${connectionError ? 'text-red-600' : 'text-green-600'}`}>
+            {connectionError ? 'Offline' : 'Active'}
+          </span>
         </div>
       </div>
+
+      {connectionError && (
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-6">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="body-2">{connectionError}</p>
+              <p className="caption mt-1">Some features may be limited. Please check your internet connection.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {status.isSearching && (
         <div className="mb-6">
