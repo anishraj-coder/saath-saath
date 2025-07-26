@@ -23,7 +23,9 @@
   - Implement real-time inventory tracking
   - _Requirements: 7.1, 7.2, 7.3, 10.1, 10.3_
 
-- [ ] 4. Core Group Buying Algorithm
+- [x] 4. Core Group Buying Algorithm
+
+
 
 
 
