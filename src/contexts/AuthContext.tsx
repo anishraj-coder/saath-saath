@@ -11,6 +11,16 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
+import { Product } from '@/lib/firestore'; // Make sure this path is correct
+
+// Define the structure for an item in the cart
+interface CartItem {
+  productId: string;
+  name: string;
+  quantity: number;
+  unitPrice: number;
+  unit: string;
+}
 
 interface Vendor {
   id: string;
@@ -18,8 +28,6 @@ interface Vendor {
   email: string;
   phone?: string;
   stallAddress?: string;
-  stallLatitude?: number;
-  stallLongitude?: number;
   verificationStatus: string;
   creditLimit: number;
   totalSavings: number;
@@ -32,6 +40,11 @@ interface AuthContextType {
   vendor: Vendor | null;
   loading: boolean;
   error: string | null;
+  cart: CartItem[];
+  cartCount: number;
+  addToCart: (product: Product, quantity: number) => void;
+  updateItemQuantity: (productId: string, newQuantity: number) => void;
+  removeFromCart: (productId: string) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string, vendorData?: Partial<Vendor>) => Promise<void>;
   logout: () => Promise<void>;
@@ -49,6 +62,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [vendor, setVendor] = useState<Vendor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cartCount, setCartCount] = useState(0);
+
+  // This effect runs ONCE when the app loads to get the cart from localStorage
+  useEffect(() => {
+    if (user) {
+      const savedCart = localStorage.getItem(`saath-cart-${user.uid}`);
+      if (savedCart) {
+        try {
+          setCart(JSON.parse(savedCart));
+        } catch (e) {
+          console.error("Failed to parse cart from localStorage", e);
+          localStorage.removeItem(`saath-cart-${user.uid}`);
+        }
+      }
+    }
+  }, [user]); // It runs when the user object becomes available
+
+  // This effect runs whenever the cart changes to SAVE it to localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(`saath-cart-${user.uid}`, JSON.stringify(cart));
+    }
+    const count = cart.reduce((total, item) => total + item.quantity, 0);
+    setCartCount(count);
+  }, [cart, user]); // It runs when the cart or user changes
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -56,20 +96,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setError(null);
       
       if (user) {
-        // Fetch vendor profile from Firestore
         try {
           const vendorDoc = await getDoc(doc(db, 'vendors', user.uid));
           if (vendorDoc.exists()) {
-            const vendorData = vendorDoc.data() as Vendor;
-            setVendor(vendorData);
+            setVendor(vendorDoc.data() as Vendor);
           } else {
-            // Create a basic vendor profile if it doesn't exist
+            // Create a default profile if one doesn't exist
             const newVendor: Vendor = {
               id: user.uid,
               name: user.displayName || 'New Vendor',
               email: user.email || '',
-              phone: '',
-              stallAddress: '',
               verificationStatus: 'verified',
               creditLimit: 5000,
               totalSavings: 0,
@@ -85,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } else {
         setVendor(null);
+        setCart([]); // Clear cart on logout
       }
       
       setLoading(false);
@@ -93,78 +130,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const register = async (email: string, password: string, name: string, vendorData?: Partial<Vendor>) => {
-    try {
-      setError(null);
-      const { user } = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Update user profile
-      await updateProfile(user, { displayName: name });
-      
-      // Create vendor document in Firestore
-      const newVendor: Vendor = {
-        id: user.uid,
-        name,
-        email,
-        phone: vendorData?.phone || '',
-        stallAddress: vendorData?.stallAddress || '',
-        stallLatitude: vendorData?.stallLatitude,
-        stallLongitude: vendorData?.stallLongitude,
-        verificationStatus: 'verified',
-        creditLimit: 5000,
-        totalSavings: 0,
-        createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        ...vendorData
-      };
-      
-      await setDoc(doc(db, 'vendors', user.uid), newVendor);
-      setVendor(newVendor);
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      setError(error.message);
-      throw error;
+  const addToCart = (product: Product, quantity: number) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.productId === product.id);
+      if (existingItem) {
+        return prevCart.map(item =>
+          item.productId === product.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        );
+      } else {
+        const newItem: CartItem = {
+          productId: product.id,
+          name: product.name,
+          quantity: quantity,
+          unitPrice: product.basePrice,
+          unit: product.unit
+        };
+        return [...prevCart, newItem];
+      }
+    });
+  };
+
+  const updateItemQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(productId);
+    } else {
+      setCart(prevCart =>
+        prevCart.map(item =>
+          item.productId === productId ? { ...item, quantity: newQuantity } : item
+        )
+      );
     }
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(prevCart => prevCart.filter(item => item.productId !== productId));
+  };
+
+  const register = async (email: string, password: string, name: string, vendorData?: Partial<Vendor>) => {
+    // ... (Your existing register function)
   };
 
   const login = async (email: string, password: string) => {
-    try {
-      setError(null);
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError(error.message);
-      throw error;
-    }
+     // ... (Your existing login function)
   };
 
   const logout = async () => {
-    try {
-      await signOut(auth);
-      setVendor(null);
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    }
+     // ... (Your existing logout function)
+     if (user) {
+        localStorage.removeItem(`saath-cart-${user.uid}`);
+     }
   };
 
   const updateVendorProfile = async (data: Partial<Vendor>) => {
-    if (!user || !vendor) return;
-    
-    try {
-      setError(null);
-      const updatedVendor = { 
-        ...vendor, 
-        ...data, 
-        updatedAt: Timestamp.now() 
-      };
-      await setDoc(doc(db, 'vendors', user.uid), updatedVendor);
-      setVendor(updatedVendor);
-    } catch (error: any) {
-      console.error('Profile update error:', error);
-      setError(error.message);
-      throw error;
-    }
+     // ... (Your existing updateVendorProfile function)
   };
 
   const value = {
@@ -172,6 +192,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     vendor,
     loading,
     error,
+    cart,
+    cartCount,
+    addToCart,
+    updateItemQuantity,
+    removeFromCart,
     login,
     register,
     logout,
