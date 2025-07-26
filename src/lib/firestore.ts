@@ -188,6 +188,69 @@ export class FirestoreService {
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuyingGroup));
   }
 
+  // Group Buying Engine - Core Functions
+  static async findNearbyVendors(centerLocation: GeoPoint, radiusKm: number): Promise<Vendor[]> {
+    // For demo purposes, we'll use a simple bounding box query
+    // In production, you'd use geohashing or specialized geo queries
+    const vendors = await getDocs(collection(db, 'vendors'));
+    
+    return vendors.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Vendor))
+      .filter(vendor => {
+        if (!vendor.stallLocation) return false;
+        const distance = this.calculateDistance(
+          centerLocation.latitude,
+          centerLocation.longitude,
+          vendor.stallLocation.latitude,
+          vendor.stallLocation.longitude
+        );
+        return distance <= radiusKm;
+      });
+  }
+
+  static async findCompatibleOrders(newOrder: Order): Promise<Order[]> {
+    // Find orders with similar products in the same area
+    const recentOrders = await getDocs(
+      query(
+        collection(db, 'orders'),
+        where('status', '==', 'pending'),
+        where('createdAt', '>', new Date(Date.now() - 2 * 60 * 60 * 1000)) // Last 2 hours
+      )
+    );
+
+    return recentOrders.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Order))
+      .filter(order => {
+        // Check if orders have overlapping products
+        const newOrderProductIds = newOrder.items.map(item => item.productId);
+        const existingOrderProductIds = order.items.map(item => item.productId);
+        
+        return newOrderProductIds.some(productId => 
+          existingOrderProductIds.includes(productId)
+        );
+      });
+  }
+
+  static calculateBulkDiscount(product: Product, totalQuantity: number): number {
+    const applicableTier = product.bulkPricing
+      .filter(tier => totalQuantity >= tier.minQuantity)
+      .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+
+    return applicableTier ? applicableTier.pricePerUnit : product.basePrice;
+  }
+
+  static calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
+
   // Supplier operations
   static async getSuppliers(): Promise<Supplier[]> {
     const q = query(collection(db, 'suppliers'), where('isActive', '==', true));

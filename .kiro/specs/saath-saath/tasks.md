@@ -1,16 +1,16 @@
 # Implementation Plan
 
-- [x] 1. Database Setup and Core Models
+- [x] 1. Firebase Setup and Core Models
 
-  - Set up PostgreSQL database with Prisma ORM
-  - Create database schema for vendors, products, orders, and buying groups
-  - Implement database connection and basic CRUD operations
+  - Set up Firebase Firestore with authentication
+  - Create Firestore collections for vendors, products, orders, and buying groups
+  - Implement Firebase connection and basic CRUD operations
   - _Requirements: 1.1, 6.1, 6.2, 10.1_
 
-- [ ] 2. Vendor Authentication and Registration System
+- [x] 2. Vendor Authentication and Registration System
 
-  - Create vendor registration API with mobile OTP verification
-  - Implement JWT-based authentication system
+  - Create vendor registration with email authentication
+  - Implement Firebase-based authentication system
   - Build vendor profile management with location capture
   - Create basic vendor verification workflow
   - _Requirements: 6.1, 6.2, 6.3, 6.4_

@@ -45,7 +45,7 @@ The application follows a Firebase-first architecture optimized for the 6 essent
 ┌─────────────────────────────────────────────────────────────┐
 │                   External Integrations                    │
 │  ONDC Network + WeatherAPI + Mapbox/OpenStreetMap         │
-│  Speech Recognition + Text-to-Speech + Firebase Auth SMS  │
+│  Speech Recognition + Text-to-Speech + Push Notifications │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,8 +74,8 @@ The application follows a Firebase-first architecture optimized for the 6 essent
 - **WeatherAPI**: 1M calls/month free for demand forecasting
 - **Mapbox**: 50K map loads/month free for location services
 - **OpenStreetMap**: Unlimited free mapping as fallback
-- **Firebase Auth SMS**: Free SMS OTP for vendor verification
 - **Web Speech API**: Free browser-based voice recognition
+- **Push Notifications**: Free browser notifications for updates
 
 ## Components and Interfaces
 
@@ -530,12 +530,12 @@ interface MapsService {
 // Usage: Group formation, delivery optimization
 ```
 
-### Authentication (Firebase - Free SMS)
+### Authentication (Firebase Email + Push Notifications)
 ```typescript
 interface AuthService {
-  sendSMSOTP(phone: string): Promise<void>; // Firebase free tier
-  verifyOTP(phone: string, code: string): Promise<boolean>;
-  // Fallback: Email verification for demo
+  loginWithEmail(email: string, password: string): Promise<User>;
+  registerWithEmail(email: string, password: string): Promise<User>;
+  sendPushNotification(userId: string, message: string): Promise<void>;
 }
 ```
 
