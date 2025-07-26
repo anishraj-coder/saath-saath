@@ -39,7 +39,7 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
     if (currentOrder && vendor) {
       startGroupFormation(currentOrder);
     }
-  }, [currentOrder, vendor]);
+  }, [currentOrder, startGroupFormation, vendor]);
 
   const loadActiveGroups = async () => {
     try {

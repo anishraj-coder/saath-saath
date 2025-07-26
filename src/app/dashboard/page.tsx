@@ -132,6 +132,12 @@ export default function DashboardPage() {
             <div className="flex items-center space-x-4">
               <span className="body-2 text-gray-700">Welcome, {vendor.name}</span>
               <button
+                onClick={() => router.push('/test-group-buying')}
+                className="button-text bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
+              >
+                Test Engine
+              </button>
+              <button
                 onClick={() => router.push('/login')}
                 className="button-text text-gray-500 hover:text-gray-700"
               >
