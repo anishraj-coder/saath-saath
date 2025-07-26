@@ -42,8 +42,8 @@ export default function RegisterPage() {
       await register(formData.email, formData.password, formData.name, {
         phone: formData.phone,
         stallAddress: formData.stallAddress,
-        stallLatitude: formData.stallLatitude,
-        stallLongitude: formData.stallLongitude
+        stallLatitude: formData.stallLatitude || undefined,
+        stallLongitude: formData.stallLongitude || undefined
       });
       router.push('/dashboard');
     } catch (err: unknown) {

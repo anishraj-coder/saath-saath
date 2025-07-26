@@ -34,6 +34,15 @@ export default function SetupFirebasePage() {
           rating: 4.2,
           isActive: true,
           createdAt: Timestamp.now()
+        },
+        {
+          name: 'Delhi Wholesale Market',
+          contactPhone: '9876543212',
+          address: 'INA Market, Delhi',
+          location: new GeoPoint(28.5706, 77.2094),
+          rating: 4.3,
+          isActive: true,
+          createdAt: Timestamp.now()
         }
       ];
 
@@ -155,6 +164,118 @@ export default function SetupFirebasePage() {
 
         await addDoc(collection(db, 'vendors'), vendorData);
         setMessage('✅ Demo user created: demo@saathsaath.com / demo123');
+        
+        // Create additional demo vendors for group buying testing
+        const demoVendors = [
+          {
+            id: 'vendor_cp_1',
+            name: 'Raj Chaat Corner',
+            email: 'raj@chaatcorner.com',
+            phone: '9876543201',
+            stallAddress: 'Connaught Place, Block A, New Delhi',
+            stallLocation: new GeoPoint(28.6315, 77.2167), // Very close to main demo user
+            verificationStatus: 'verified',
+            creditLimit: 8000,
+            totalSavings: 1200,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          },
+          {
+            id: 'vendor_cp_2', 
+            name: 'Sharma Samosa Stall',
+            email: 'sharma@samosa.com',
+            phone: '9876543202',
+            stallAddress: 'Connaught Place, Block B, New Delhi',
+            stallLocation: new GeoPoint(28.6320, 77.2170), // 50m from demo user
+            verificationStatus: 'verified',
+            creditLimit: 6000,
+            totalSavings: 800,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          },
+          {
+            id: 'vendor_cp_3',
+            name: 'Delhi Dosa Point',
+            email: 'dosa@delhi.com', 
+            phone: '9876543203',
+            stallAddress: 'Connaught Place, Block C, New Delhi',
+            stallLocation: new GeoPoint(28.6310, 77.2160), // 100m from demo user
+            verificationStatus: 'verified',
+            creditLimit: 7000,
+            totalSavings: 950,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          },
+          {
+            id: 'vendor_far',
+            name: 'Gurgaon Food Cart',
+            email: 'gurgaon@food.com',
+            phone: '9876543204', 
+            stallAddress: 'Cyber City, Gurgaon',
+            stallLocation: new GeoPoint(28.4595, 77.0266), // Far from demo user (>20km)
+            verificationStatus: 'verified',
+            creditLimit: 5000,
+            totalSavings: 600,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          }
+        ];
+
+        for (const vendor of demoVendors) {
+          await addDoc(collection(db, 'vendors'), vendor);
+          setMessage(`Created demo vendor: ${vendor.name}`);
+        }
+
+        // Create some pending orders for group formation testing
+        const pendingOrders = [
+          {
+            id: 'order_raj_1',
+            vendorId: 'vendor_cp_1',
+            items: [
+              { productId: 'onions', productName: 'Onions', quantity: 15, unitPrice: 30, totalPrice: 450 },
+              { productId: 'potatoes', productName: 'Potatoes', quantity: 10, unitPrice: 25, totalPrice: 250 }
+            ],
+            totalAmount: 700,
+            paymentMethod: 'credit',
+            status: 'pending',
+            deliveryAddress: 'Connaught Place, Block A, New Delhi',
+            deliveryLocation: new GeoPoint(28.6315, 77.2167),
+            createdAt: Timestamp.now()
+          },
+          {
+            id: 'order_sharma_1',
+            vendorId: 'vendor_cp_2',
+            items: [
+              { productId: 'onions', productName: 'Onions', quantity: 20, unitPrice: 30, totalPrice: 600 },
+              { productId: 'oil', productName: 'Cooking Oil', quantity: 3, unitPrice: 120, totalPrice: 360 }
+            ],
+            totalAmount: 960,
+            paymentMethod: 'snpl',
+            status: 'pending',
+            deliveryAddress: 'Connaught Place, Block B, New Delhi',
+            deliveryLocation: new GeoPoint(28.6320, 77.2170),
+            createdAt: Timestamp.now()
+          },
+          {
+            id: 'order_dosa_1',
+            vendorId: 'vendor_cp_3',
+            items: [
+              { productId: 'potatoes', productName: 'Potatoes', quantity: 25, unitPrice: 25, totalPrice: 625 },
+              { productId: 'flour', productName: 'Wheat Flour', quantity: 8, unitPrice: 35, totalPrice: 280 }
+            ],
+            totalAmount: 905,
+            paymentMethod: 'credit',
+            status: 'pending',
+            deliveryAddress: 'Connaught Place, Block C, New Delhi',
+            deliveryLocation: new GeoPoint(28.6310, 77.2160),
+            createdAt: Timestamp.now()
+          }
+        ];
+
+        for (const order of pendingOrders) {
+          await addDoc(collection(db, 'orders'), order);
+          setMessage(`Created pending order: ${order.id}`);
+        }
       } catch (error) {
         if (error && typeof error === 'object' && 'code' in error && error.code === 'auth/email-already-in-use') {
           setMessage('✅ Demo user already exists: demo@saathsaath.com / demo123');

@@ -78,8 +78,13 @@ export interface BuyingGroup {
   totalSavings: number;
   status: 'forming' | 'confirmed' | 'ordered' | 'delivered';
   deliverySlot: Timestamp;
-  deliveryArea: string;
+  deliveryArea?: string;
+  centerLocation?: GeoPoint; // Geographic center of the group
+  radiusKm?: number; // Group radius in kilometers
+  formationDeadline?: Timestamp; // When group formation closes
+  minimumMembers?: number; // Minimum vendors needed
   createdAt: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export interface GroupProduct {
@@ -87,8 +92,9 @@ export interface GroupProduct {
   productName: string;
   totalQuantity: number;
   unitPrice: number;
+  bulkPrice?: number;
   totalSavings: number;
-  memberOrders: { vendorId: string; quantity: number }[];
+  memberOrders: { vendorId: string; quantity: number; individualSavings?: number }[];
 }
 
 export interface Supplier {
@@ -157,13 +163,19 @@ export class FirestoreService {
   }
 
   static async getVendorOrders(vendorId: string): Promise<Order[]> {
-    const q = query(
-      collection(db, 'orders'),
-      where('vendorId', '==', vendorId),
-      orderBy('createdAt', 'desc')
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    try {
+      const q = query(
+        collection(db, 'orders'),
+        where('vendorId', '==', vendorId),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+    } catch (error) {
+      console.error('Error getting vendor orders:', error);
+      // Return empty array if query fails (graceful degradation)
+      return [];
+    }
   }
 
   static async updateOrderStatus(orderId: string, status: Order['status']) {
@@ -178,14 +190,94 @@ export class FirestoreService {
   }
 
   static async getBuyingGroups(status?: BuyingGroup['status']): Promise<BuyingGroup[]> {
-    let q = query(collection(db, 'buyingGroups'), orderBy('createdAt', 'desc'));
-    
-    if (status) {
-      q = query(q, where('status', '==', status));
+    try {
+      let q = query(collection(db, 'buyingGroups'), orderBy('createdAt', 'desc'));
+      
+      if (status) {
+        q = query(q, where('status', '==', status));
+      }
+      
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuyingGroup));
+    } catch (error) {
+      console.error('Error getting buying groups:', error);
+      // Return empty array if query fails (graceful degradation)
+      return [];
     }
+  }
+
+  // Group Buying Engine - Core Functions
+  static async findNearbyVendors(centerLocation: GeoPoint, radiusKm: number): Promise<Vendor[]> {
+    // For demo purposes, we'll use a simple bounding box query
+    // In production, you'd use geohashing or specialized geo queries
+    const vendors = await getDocs(collection(db, 'vendors'));
     
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as BuyingGroup));
+    return vendors.docs
+      .map(doc => ({ id: doc.id, ...doc.data() } as Vendor))
+      .filter(vendor => {
+        if (!vendor.stallLocation) return false;
+        const distance = this.calculateDistance(
+          centerLocation.latitude,
+          centerLocation.longitude,
+          vendor.stallLocation.latitude,
+          vendor.stallLocation.longitude
+        );
+        return distance <= radiusKm;
+      });
+  }
+
+  static async findCompatibleOrders(newOrder: Order): Promise<Order[]> {
+    try {
+      // Simplified query - only filter by status to avoid composite index requirement
+      const pendingOrders = await getDocs(
+        query(
+          collection(db, 'orders'),
+          where('status', '==', 'pending')
+        )
+      );
+
+      const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+
+      return pendingOrders.docs
+        .map(doc => ({ id: doc.id, ...doc.data() } as Order))
+        .filter(order => {
+          // Filter by time in JavaScript (to avoid composite index)
+          const orderTime = order.createdAt.toDate();
+          if (orderTime < twoHoursAgo) return false;
+
+          // Check if orders have overlapping products
+          const newOrderProductIds = newOrder.items.map(item => item.productId);
+          const existingOrderProductIds = order.items.map(item => item.productId);
+          
+          return newOrderProductIds.some(productId => 
+            existingOrderProductIds.includes(productId)
+          );
+        });
+    } catch (error) {
+      console.error('Error finding compatible orders:', error);
+      // Return empty array if query fails (graceful degradation)
+      return [];
+    }
+  }
+
+  static calculateBulkDiscount(product: Product, totalQuantity: number): number {
+    const applicableTier = product.bulkPricing
+      .filter(tier => totalQuantity >= tier.minQuantity)
+      .sort((a, b) => b.minQuantity - a.minQuantity)[0];
+
+    return applicableTier ? applicableTier.pricePerUnit : product.basePrice;
+  }
+
+  static calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   }
 
   // Supplier operations

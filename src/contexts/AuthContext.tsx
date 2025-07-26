@@ -9,7 +9,7 @@ import {
   onAuthStateChanged,
   updateProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, Timestamp, GeoPoint } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 
 interface Vendor {
@@ -18,8 +18,7 @@ interface Vendor {
   email: string;
   phone?: string;
   stallAddress?: string;
-  stallLatitude?: number;
-  stallLongitude?: number;
+  stallLocation?: GeoPoint;
   verificationStatus: string;
   creditLimit: number;
   totalSavings: number;
@@ -33,7 +32,7 @@ interface AuthContextType {
   loading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, name: string, vendorData?: Partial<Vendor>) => Promise<void>;
+  register: (email: string, password: string, name: string, vendorData?: Partial<Vendor> & { stallLatitude?: number; stallLongitude?: number }) => Promise<void>;
   logout: () => Promise<void>;
   updateVendorProfile: (data: Partial<Vendor>) => Promise<void>;
 }
@@ -70,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               email: user.email || '',
               phone: '',
               stallAddress: '',
+              stallLocation: undefined,
               verificationStatus: 'verified',
               creditLimit: 5000,
               totalSavings: 0,
@@ -93,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const register = async (email: string, password: string, name: string, vendorData?: Partial<Vendor>) => {
+  const register = async (email: string, password: string, name: string, vendorData?: Partial<Vendor> & { stallLatitude?: number; stallLongitude?: number }) => {
     try {
       setError(null);
       const { user } = await createUserWithEmailAndPassword(auth, email, password);
@@ -102,20 +102,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await updateProfile(user, { displayName: name });
       
       // Create vendor document in Firestore
+      const stallLocation = (vendorData?.stallLatitude && vendorData?.stallLongitude) 
+        ? new GeoPoint(vendorData.stallLatitude, vendorData.stallLongitude)
+        : undefined;
+
       const newVendor: Vendor = {
         id: user.uid,
         name,
         email,
         phone: vendorData?.phone || '',
         stallAddress: vendorData?.stallAddress || '',
-        stallLatitude: vendorData?.stallLatitude,
-        stallLongitude: vendorData?.stallLongitude,
+        stallLocation,
         verificationStatus: 'verified',
         creditLimit: 5000,
         totalSavings: 0,
         createdAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
-        ...vendorData
+        updatedAt: Timestamp.now()
       };
       
       await setDoc(doc(db, 'vendors', user.uid), newVendor);
