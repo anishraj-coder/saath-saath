@@ -44,8 +44,8 @@ The application follows a Firebase-first architecture optimized for the 6 essent
                               ▼
 ┌─────────────────────────────────────────────────────────────┐
 │                   External Integrations                    │
-│  ONDC Network + Weather API + Maps API + Payment Gateway   │
-│  Speech Recognition + Text-to-Speech + SMS Gateway         │
+│  ONDC Network + WeatherAPI + Mapbox/OpenStreetMap         │
+│  Speech Recognition + Text-to-Speech + Firebase Auth SMS  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -69,7 +69,13 @@ The application follows a Firebase-first architecture optimized for the 6 essent
 - **Geolocation API**: Location-based group formation and logistics
 - **Web Workers**: Background processing for AI forecasting
 - **Service Workers**: Offline functionality and push notifications
-- **WebRTC**: Real-time communication for vendor coordination
+
+**Free External APIs:**
+- **WeatherAPI**: 1M calls/month free for demand forecasting
+- **Mapbox**: 50K map loads/month free for location services
+- **OpenStreetMap**: Unlimited free mapping as fallback
+- **Firebase Auth SMS**: Free SMS OTP for vendor verification
+- **Web Speech API**: Free browser-based voice recognition
 
 ## Components and Interfaces
 
@@ -496,6 +502,42 @@ interface ForecastDocument {
 - **Offline Queue**: Orders placed when network is unavailable
 - **Product Catalog**: Cached for offline browsing
 - **Voice Commands**: Cached speech recognition patterns
+
+## Free API Integration Strategy
+
+### Weather Integration (WeatherAPI - Free)
+```typescript
+interface WeatherService {
+  apiKey: string; // Free tier: 1M calls/month
+  getCurrentWeather(location: GeoPoint): Promise<WeatherData>;
+  getForecast(location: GeoPoint, days: number): Promise<WeatherForecast>;
+}
+
+// Usage: Demand forecasting adjustments
+// Rain forecast → Reduce fresh vegetables by 15%
+// Hot weather → Increase cold beverages by 25%
+```
+
+### Maps Integration (Mapbox + OpenStreetMap Fallback)
+```typescript
+interface MapsService {
+  mapboxToken: string; // Free tier: 50K loads/month
+  geocodeAddress(address: string): Promise<GeoPoint>;
+  calculateRoute(stops: GeoPoint[]): Promise<OptimizedRoute>;
+  fallbackToOSM(): void; // Free unlimited fallback
+}
+
+// Usage: Group formation, delivery optimization
+```
+
+### Authentication (Firebase - Free SMS)
+```typescript
+interface AuthService {
+  sendSMSOTP(phone: string): Promise<void>; // Firebase free tier
+  verifyOTP(phone: string, code: string): Promise<boolean>;
+  // Fallback: Email verification for demo
+}
+```
 
 ## Error Handling
 
