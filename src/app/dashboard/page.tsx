@@ -2,13 +2,11 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Added this import
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function DashboardPage() {
   const router = useRouter();
-  // Get cartCount from the context
-  const { user, vendor, loading, logout, cartCount } = useAuth();
+  const { user, vendor, loading, logout } = useAuth();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -54,28 +52,15 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - UPDATED */}
+      {/* Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
               <h1 className="text-2xl font-bold text-orange-600">Saath-Saath</h1>
             </div>
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
               <span className="text-gray-700">Welcome, {vendor.name}</span>
-              
-              {/* NEW: Cart Icon Button */}
-              <Link href="/cart" className="relative">
-                <svg className="w-6 h-6 text-gray-600 hover:text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-3 bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
-
               <button
                 onClick={handleLogout}
                 className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
@@ -169,17 +154,18 @@ export default function DashboardPage() {
         <div className="bg-white rounded-xl p-6 shadow-sm border">
           <h3 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Link href="/products" className="p-4 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">
+            <button className="p-4 bg-orange-50 rounded-lg border border-orange-200 hover:bg-orange-100 transition-colors">
               <div className="text-center">
                 <div className="w-12 h-12 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-2">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                 </div>
-                <p className="font-medium text-gray-900">Browse Products</p>
-                <p className="text-sm text-gray-600">See prices & deals</p>
+                <p className="font-medium text-gray-900">Place Order</p>
+                <p className="text-sm text-gray-600">Order raw materials</p>
               </div>
-            </Link>
+            </button>
+
             <button className="p-4 bg-green-50 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
               <div className="text-center">
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -191,6 +177,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-600">Find buying groups</p>
               </div>
             </button>
+
             <button className="p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
               <div className="text-center">
                 <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-2">
@@ -202,6 +189,7 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-600">Savings & analytics</p>
               </div>
             </button>
+
             <button className="p-4 bg-purple-50 rounded-lg border border-purple-200 hover:bg-purple-100 transition-colors">
               <div className="text-center">
                 <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-2">
