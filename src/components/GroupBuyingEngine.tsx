@@ -31,11 +31,6 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
   const [products, setProducts] = useState<Product[]>([]);
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadActiveGroups();
-    loadProducts();
-  }, []);
-
   const loadActiveGroups = async () => {
     try {
       const groups = await FirestoreService.getBuyingGroups('forming');
@@ -58,74 +53,7 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
     }
   };
 
-  const startGroupFormation = useCallback(async (order: Order) => {
-    if (!vendor?.stallLocation) return;
-
-    setStatus(prev => ({ ...prev, isSearching: true, groupFormationProgress: 10 }));
-
-    try {
-      // Step 1: Find nearby vendors (within 2km)
-      const nearbyVendors = await FirestoreService.findNearbyVendors(
-        vendor.stallLocation,
-        2 // 2km radius
-      );
-      
-      setStatus(prev => ({ 
-        ...prev, 
-        nearbyVendors, 
-        groupFormationProgress: 30 
-      }));
-
-      // Step 2: Find compatible orders
-      const compatibleOrders = await FirestoreService.findCompatibleOrders(order);
-      
-      setStatus(prev => ({ 
-        ...prev, 
-        compatibleOrders, 
-        groupFormationProgress: 50 
-      }));
-
-      // Step 3: Calculate potential savings
-      const savings = calculatePotentialSavings(order, compatibleOrders);
-      
-      setStatus(prev => ({ 
-        ...prev, 
-        potentialSavings: savings, 
-        groupFormationProgress: 70 
-      }));
-
-      // Step 4: Create group if minimum criteria met
-      if (compatibleOrders.length >= 1 && savings > 50) { // Minimum 2 vendors, ₹50 savings
-        const group = await createBuyingGroup(order, compatibleOrders);
-        onGroupFormed?.(group);
-        
-        setStatus(prev => ({ 
-          ...prev, 
-          groupFormationProgress: 100,
-          isSearching: false
-        }));
-      } else {
-        // Not enough for group, process individual order
-        setStatus(prev => ({ 
-          ...prev, 
-          groupFormationProgress: 100,
-          isSearching: false
-        }));
-      }
-
-    } catch (error) {
-      console.error('Group formation error:', error);
-      setStatus(prev => ({ ...prev, isSearching: false }));
-    }
-  }, [vendor, products, onGroupFormed]);
-
-  useEffect(() => {
-    if (currentOrder && vendor) {
-      startGroupFormation(currentOrder);
-    }
-  }, [currentOrder, startGroupFormation, vendor]);
-
-  const calculatePotentialSavings = (mainOrder: Order, compatibleOrders: Order[]): number => {
+  const calculatePotentialSavings = useCallback((mainOrder: Order, compatibleOrders: Order[]): number => {
     let totalSavings = 0;
     
     // Group all orders together
@@ -153,9 +81,9 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
     });
 
     return Math.round(totalSavings);
-  };
+  }, [products]);
 
-  const createBuyingGroup = async (mainOrder: Order, compatibleOrders: Order[]): Promise<BuyingGroup> => {
+  const createBuyingGroup = useCallback(async (mainOrder: Order, compatibleOrders: Order[]): Promise<BuyingGroup> => {
     if (!vendor?.stallLocation) throw new Error('Vendor location required');
 
     const allOrders = [mainOrder, ...compatibleOrders];
@@ -241,7 +169,79 @@ export default function GroupBuyingEngine({ currentOrder, onGroupFormed }: Group
 
     const groupId = await FirestoreService.createBuyingGroup(groupData);
     return { id: groupId, ...groupData };
-  };
+  }, [vendor, products]);
+
+  const startGroupFormation = useCallback(async (order: Order) => {
+    if (!vendor?.stallLocation) return;
+
+    setStatus(prev => ({ ...prev, isSearching: true, groupFormationProgress: 10 }));
+
+    try {
+      // Step 1: Find nearby vendors (within 2km)
+      const nearbyVendors = await FirestoreService.findNearbyVendors(
+        vendor.stallLocation,
+        2 // 2km radius
+      );
+      
+      setStatus(prev => ({ 
+        ...prev, 
+        nearbyVendors, 
+        groupFormationProgress: 30 
+      }));
+
+      // Step 2: Find compatible orders
+      const compatibleOrders = await FirestoreService.findCompatibleOrders(order);
+      
+      setStatus(prev => ({ 
+        ...prev, 
+        compatibleOrders, 
+        groupFormationProgress: 50 
+      }));
+
+      // Step 3: Calculate potential savings
+      const savings = calculatePotentialSavings(order, compatibleOrders);
+      
+      setStatus(prev => ({ 
+        ...prev, 
+        potentialSavings: savings, 
+        groupFormationProgress: 70 
+      }));
+
+      // Step 4: Create group if minimum criteria met
+      if (compatibleOrders.length >= 1 && savings > 50) { // Minimum 2 vendors, ₹50 savings
+        const group = await createBuyingGroup(order, compatibleOrders);
+        onGroupFormed?.(group);
+        
+        setStatus(prev => ({ 
+          ...prev, 
+          groupFormationProgress: 100,
+          isSearching: false
+        }));
+      } else {
+        // Not enough for group, process individual order
+        setStatus(prev => ({ 
+          ...prev, 
+          groupFormationProgress: 100,
+          isSearching: false
+        }));
+      }
+
+    } catch (error) {
+      console.error('Group formation error:', error);
+      setStatus(prev => ({ ...prev, isSearching: false }));
+    }
+  }, [vendor, calculatePotentialSavings, createBuyingGroup, onGroupFormed]);
+
+  useEffect(() => {
+    loadActiveGroups();
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    if (currentOrder && vendor) {
+      startGroupFormation(currentOrder);
+    }
+  }, [currentOrder, startGroupFormation, vendor]);
 
   if (!vendor) {
     return (
