@@ -147,14 +147,14 @@ export default function SetupFirebasePage() {
         const { user } = await createUserWithEmailAndPassword(auth, 'demo@saathsaath.com', 'demo123');
         await updateProfile(user, { displayName: 'Demo Vendor' });
         
-        // Create vendor profile
+        // Create vendor profile with proper location
         const vendorData = {
           id: user.uid,
           name: 'Demo Vendor',
           email: 'demo@saathsaath.com',
           phone: '9876543210',
-          stallAddress: 'Connaught Place, New Delhi',
-          stallLocation: new GeoPoint(28.6315, 77.2167),
+          stallAddress: 'Connaught Place, Block M, New Delhi',
+          stallLocation: new GeoPoint(28.6315, 77.2167), // Central CP location
           verificationStatus: 'verified' as const,
           creditLimit: 10000,
           totalSavings: 2500,
@@ -173,7 +173,7 @@ export default function SetupFirebasePage() {
             email: 'raj@chaatcorner.com',
             phone: '9876543201',
             stallAddress: 'Connaught Place, Block A, New Delhi',
-            stallLocation: new GeoPoint(28.6315, 77.2167), // Very close to main demo user
+            stallLocation: new GeoPoint(28.6318, 77.2165), // 30m from demo user
             verificationStatus: 'verified',
             creditLimit: 8000,
             totalSavings: 1200,
@@ -186,7 +186,7 @@ export default function SetupFirebasePage() {
             email: 'sharma@samosa.com',
             phone: '9876543202',
             stallAddress: 'Connaught Place, Block B, New Delhi',
-            stallLocation: new GeoPoint(28.6320, 77.2170), // 50m from demo user
+            stallLocation: new GeoPoint(28.6312, 77.2169), // 50m from demo user
             verificationStatus: 'verified',
             creditLimit: 6000,
             totalSavings: 800,
@@ -207,10 +207,23 @@ export default function SetupFirebasePage() {
             updatedAt: Timestamp.now()
           },
           {
+            id: 'vendor_cp_4',
+            name: 'CP Snacks Corner',
+            email: 'snacks@cp.com',
+            phone: '9876543204', 
+            stallAddress: 'Connaught Place, Block D, New Delhi',
+            stallLocation: new GeoPoint(28.6308, 77.2172), // 80m from demo user
+            verificationStatus: 'verified',
+            creditLimit: 7500,
+            totalSavings: 1100,
+            createdAt: Timestamp.now(),
+            updatedAt: Timestamp.now()
+          },
+          {
             id: 'vendor_far',
             name: 'Gurgaon Food Cart',
             email: 'gurgaon@food.com',
-            phone: '9876543204', 
+            phone: '9876543205', 
             stallAddress: 'Cyber City, Gurgaon',
             stallLocation: new GeoPoint(28.4595, 77.0266), // Far from demo user (>20km)
             verificationStatus: 'verified',
@@ -226,7 +239,8 @@ export default function SetupFirebasePage() {
           setMessage(`Created demo vendor: ${vendor.name}`);
         }
 
-        // Create some pending orders for group formation testing
+        // Create more recent pending orders for group formation testing
+        const now = new Date();
         const pendingOrders = [
           {
             id: 'order_raj_1',
@@ -239,8 +253,8 @@ export default function SetupFirebasePage() {
             paymentMethod: 'credit',
             status: 'pending',
             deliveryAddress: 'Connaught Place, Block A, New Delhi',
-            deliveryLocation: new GeoPoint(28.6315, 77.2167),
-            createdAt: Timestamp.now()
+            deliveryLocation: new GeoPoint(28.6318, 77.2165), // 30m from demo user
+            createdAt: Timestamp.fromDate(new Date(now.getTime() - 30 * 60 * 1000)) // 30 min ago
           },
           {
             id: 'order_sharma_1',
@@ -253,8 +267,8 @@ export default function SetupFirebasePage() {
             paymentMethod: 'snpl',
             status: 'pending',
             deliveryAddress: 'Connaught Place, Block B, New Delhi',
-            deliveryLocation: new GeoPoint(28.6320, 77.2170),
-            createdAt: Timestamp.now()
+            deliveryLocation: new GeoPoint(28.6312, 77.2169), // 50m from demo user
+            createdAt: Timestamp.fromDate(new Date(now.getTime() - 45 * 60 * 1000)) // 45 min ago
           },
           {
             id: 'order_dosa_1',
@@ -267,8 +281,36 @@ export default function SetupFirebasePage() {
             paymentMethod: 'credit',
             status: 'pending',
             deliveryAddress: 'Connaught Place, Block C, New Delhi',
-            deliveryLocation: new GeoPoint(28.6310, 77.2160),
-            createdAt: Timestamp.now()
+            deliveryLocation: new GeoPoint(28.6320, 77.2163), // 70m from demo user
+            createdAt: Timestamp.fromDate(new Date(now.getTime() - 60 * 60 * 1000)) // 1 hour ago
+          },
+          {
+            id: 'order_extra_1',
+            vendorId: 'vendor_cp_1',
+            items: [
+              { productId: 'tomatoes', productName: 'Tomatoes', quantity: 12, unitPrice: 40, totalPrice: 480 },
+              { productId: 'onions', productName: 'Onions', quantity: 8, unitPrice: 30, totalPrice: 240 }
+            ],
+            totalAmount: 720,
+            paymentMethod: 'credit',
+            status: 'pending',
+            deliveryAddress: 'Connaught Place, Block A, New Delhi',
+            deliveryLocation: new GeoPoint(28.6318, 77.2165),
+            createdAt: Timestamp.fromDate(new Date(now.getTime() - 20 * 60 * 1000)) // 20 min ago
+          },
+          {
+            id: 'order_extra_2',
+            vendorId: 'vendor_cp_2',
+            items: [
+              { productId: 'potatoes', productName: 'Potatoes', quantity: 18, unitPrice: 25, totalPrice: 450 },
+              { productId: 'tomatoes', productName: 'Tomatoes', quantity: 15, unitPrice: 40, totalPrice: 600 }
+            ],
+            totalAmount: 1050,
+            paymentMethod: 'snpl',
+            status: 'pending',
+            deliveryAddress: 'Connaught Place, Block B, New Delhi',
+            deliveryLocation: new GeoPoint(28.6312, 77.2169),
+            createdAt: Timestamp.fromDate(new Date(now.getTime() - 10 * 60 * 1000)) // 10 min ago
           }
         ];
 

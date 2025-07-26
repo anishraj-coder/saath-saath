@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import GroupBuyingEngine from '@/components/GroupBuyingEngine';
+import VoiceInterface from '@/components/VoiceInterface';
+import AIForecastingEngine from '@/components/AIForecastingEngine';
+import SNPLCreditSystem from '@/components/SNPLCreditSystem';
 import { FirestoreService, Order, Product, BuyingGroup } from '@/lib/firestore';
-import { Timestamp } from 'firebase/firestore';
+import { ProductCatalogService } from '@/lib/productCatalog';
+import { Timestamp, GeoPoint } from 'firebase/firestore';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -18,26 +22,23 @@ export default function DashboardPage() {
     totalSavings: 0,
     activeGroups: 0
   });
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'forecast' | 'credit' | 'voice'>('dashboard');
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-
-  useEffect(() => {
-    if (vendor) {
-      loadDashboardData();
-    }
-  }, [vendor]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     if (!vendor) return;
 
     try {
-      // Load products
+      // Initialize product catalog if empty
       const productList = await FirestoreService.getProducts();
-      setProducts(productList);
+      if (productList.length === 0) {
+        console.log('Initializing product catalog...');
+        await ProductCatalogService.initializeProductCatalog();
+        const newProductList = await FirestoreService.getProducts();
+        setProducts(newProductList);
+      } else {
+        setProducts(productList);
+      }
 
       // Load vendor's recent orders
       const orders = await FirestoreService.getVendorOrders(vendor.id);
@@ -58,41 +59,83 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     }
-  };
+  }, [vendor]);
 
-  const createSampleOrder = () => {
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    if (vendor) {
+      loadDashboardData();
+    }
+  }, [loadDashboardData, vendor]);
+
+  const createSampleOrder = async () => {
     if (!vendor || products.length === 0) return;
 
-    // Create a sample order for demonstration
-    const sampleOrder: Order = {
-      id: `order_${Date.now()}`,
-      vendorId: vendor.id,
-      items: [
-        {
-          productId: products[0].id,
-          productName: products[0].name,
-          quantity: 10,
-          unitPrice: products[0].basePrice,
-          totalPrice: products[0].basePrice * 10
-        },
-        {
-          productId: products[1]?.id || products[0].id,
-          productName: products[1]?.name || products[0].name,
-          quantity: 5,
-          unitPrice: products[1]?.basePrice || products[0].basePrice,
-          totalPrice: (products[1]?.basePrice || products[0].basePrice) * 5
-        }
-      ],
-      totalAmount: 0,
-      paymentMethod: 'credit',
-      status: 'pending',
-      deliveryAddress: vendor.stallAddress || 'Demo Stall Location',
-      deliveryLocation: vendor.stallLocation,
-      createdAt: Timestamp.now()
-    };
+    try {
+      // Ensure vendor has location (add if missing)
+      let vendorWithLocation = vendor;
+      if (!vendor.stallLocation) {
+        // Set default location for demo user (Connaught Place center)
+        const defaultLocation = new GeoPoint(28.6315, 77.2167);
+        vendorWithLocation = { ...vendor, stallLocation: defaultLocation };
+        
+        // Update vendor in database
+        await FirestoreService.updateVendor(vendor.id, { 
+          stallLocation: defaultLocation,
+          stallAddress: vendor.stallAddress || 'Connaught Place, Block M, New Delhi'
+        });
+      }
 
-    sampleOrder.totalAmount = sampleOrder.items.reduce((sum, item) => sum + item.totalPrice, 0);
-    setCurrentOrder(sampleOrder);
+      // Create a realistic sample order with common products
+      const sampleOrder: Order = {
+        id: `sample_order_${Date.now()}`,
+        vendorId: vendor.id,
+        items: [
+          {
+            productId: 'onions',
+            productName: 'Onions',
+            quantity: 12,
+            unitPrice: 30,
+            totalPrice: 360
+          },
+          {
+            productId: 'potatoes', 
+            productName: 'Potatoes',
+            quantity: 8,
+            unitPrice: 25,
+            totalPrice: 200
+          },
+          {
+            productId: 'tomatoes',
+            productName: 'Tomatoes', 
+            quantity: 6,
+            unitPrice: 40,
+            totalPrice: 240
+          }
+        ],
+        totalAmount: 800,
+        paymentMethod: 'credit',
+        status: 'pending',
+        deliveryAddress: vendorWithLocation.stallAddress || 'Connaught Place, Block M, New Delhi',
+        deliveryLocation: vendorWithLocation.stallLocation,
+        createdAt: Timestamp.now()
+      };
+
+      console.log('Created sample order:', sampleOrder);
+      setCurrentOrder(sampleOrder);
+      
+      // Show success message
+      alert('Sample order created! Watch the Group Buying Engine find compatible orders and form a group.');
+      
+    } catch (error) {
+      console.error('Error creating sample order:', error);
+      alert('Error creating sample order. Please try again.');
+    }
   };
 
   const handleGroupFormed = (group: BuyingGroup) => {
@@ -102,6 +145,33 @@ export default function DashboardPage() {
     
     // Refresh dashboard data
     loadDashboardData();
+  };
+
+  const handleVoiceCommand = (command: string, data?: unknown) => {
+    console.log('Voice command received:', command, data);
+    
+    switch (command) {
+      case 'dashboard':
+        setActiveTab('dashboard');
+        break;
+      case 'forecast':
+        setActiveTab('forecast');
+        break;
+      case 'credit':
+        setActiveTab('credit');
+        break;
+      case 'create_order':
+        createSampleOrder();
+        break;
+      case 'products':
+        // Show products in current view
+        break;
+      case 'help':
+        alert('Available commands: Dashboard, Forecast, Credit, Create Order, Products');
+        break;
+      default:
+        console.log('Unknown voice command:', command);
+    }
   };
 
   if (loading) {
@@ -132,6 +202,12 @@ export default function DashboardPage() {
             <div className="flex items-center space-x-4">
               <span className="body-2 text-gray-700">Welcome, {vendor.name}</span>
               <button
+                onClick={() => setVoiceEnabled(!voiceEnabled)}
+                className={`button-text px-3 py-2 rounded ${voiceEnabled ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-green-500 text-white hover:bg-green-600'}`}
+              >
+                {voiceEnabled ? '🔇 Voice Off' : '🎤 Voice On'}
+              </button>
+              <button
                 onClick={() => router.push('/test-group-buying')}
                 className="button-text bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600"
               >
@@ -160,8 +236,40 @@ export default function DashboardPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Voice Interface */}
+        <VoiceInterface 
+          onCommand={handleVoiceCommand}
+          isActive={voiceEnabled}
+          language="hi-IN"
+        />
+
+        {/* Navigation Tabs */}
+        <div className="mb-6">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'dashboard', label: '🏠 Dashboard', icon: '🏠' },
+              { id: 'forecast', label: '🤖 AI Forecast', icon: '🤖' },
+              { id: 'credit', label: '💳 SNPL Credit', icon: '💳' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as 'dashboard' | 'forecast' | 'credit')}
+                className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-orange-500 text-orange-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+        {/* Tab Content */}
+        {activeTab === 'dashboard' && (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
@@ -267,6 +375,18 @@ export default function DashboardPage() {
               ))}
             </div>
           </div>
+        )}
+          </>
+        )}
+
+        {/* AI Forecasting Tab */}
+        {activeTab === 'forecast' && (
+          <AIForecastingEngine />
+        )}
+
+        {/* SNPL Credit Tab */}
+        {activeTab === 'credit' && (
+          <SNPLCreditSystem />
         )}
       </main>
     </div>
